@@ -3,12 +3,20 @@ import * as util from 'util';
 import {exec} from 'child_process';
 import {getLogger} from 'pinus-logger';
 import * as Constants from './constants';
-import {pinus} from '../pinus';
 import {ServerInfo} from './constants';
 import {Application} from '../application';
 import * as path from 'path';
+import { pinus } from '../pinus';
 
 let logger = getLogger('pinus', path.basename(__filename));
+
+export interface CheckPortDetail {
+    host: string;
+    /** 被判定占用的端口。注意经 pinus add 传入时其实是字符串（console.ts parseArgs 不做类型转换） */
+    port: number | string;
+    /** 命中的本地地址（如 0.0.0.0:9992），用于日志与报错文案 */
+    addresses: string[];
+}
 
 
 /**
@@ -198,20 +206,47 @@ export function ping(host: string, cb: (ret: boolean) => void) {
     }
 }
 
+export function getBusyAddresses(netstatOutput: string, port: number | string): string[] {
+    let target = String(port);
+    let busy: string[] = [];
+    let lines = String(!!netstatOutput ? netstatOutput : '').split(/\r?\n/);
+    for (let i = 0; i < lines.length; i++) {
+        let addr = lines[i].trim();
+        if (!addr) {
+            continue;
+        }
+        // 端口是地址的最后一段：IPv4 用 '.' 分隔，IPv6 用 ':' 分隔
+        let segment = addr.split(/[:.]/).pop();
+        if (segment === target) {
+            busy.push(addr);
+        }
+    }
+    return busy;
+}
+
+export function formatPortOccupiedMessage(detail?: CheckPortDetail) {
+    let base = 'Port occupied already';
+    if (!!detail && detail.addresses.length > 0) {
+        base += util.format('(%s on %s)', detail.addresses.join(','), detail.host);
+    }
+    return base + ', check your server to add.';
+}
+
 /**
  * Check if server is exsit.
  *
  */
-export function checkPort(server: ServerInfo, cb: (result: string) => void) {
+export function checkPort(app: Application, server: ServerInfo, cb: (result: string, detail?: CheckPortDetail) => void) {
     if (!server.port && !server.clientPort) {
         invokeCallback(cb, 'leisure');
         return;
     }
-    let port = server.port || server.clientPort;
-    let host = server.host;
-    let generateCommand = function (host: string, port: number) {
+    const host = server.host;
+    const primaryPort = server.port || server.clientPort;
+    const clientPort = server.clientPort;
+    const generateCommand = function (host: string) {
         let cmd;
-        let ssh_params = pinus.app.get(Constants.RESERVED.SSH_CONFIG_PARAMS);
+        let ssh_params = app.get(Constants.RESERVED.SSH_CONFIG_PARAMS);
         if (!!ssh_params && Array.isArray(ssh_params)) {
             ssh_params = ssh_params.join(' ');
         }
@@ -219,38 +254,48 @@ export function checkPort(server: ServerInfo, cb: (result: string) => void) {
             ssh_params = '';
         }
         if (!isLocal(host)) {
-            cmd = util.format('ssh %s %s "netstat -an|awk \'{print $4}\'|grep %s|wc -l"', host, ssh_params, port);
+            cmd = util.format('ssh %s %s "netstat -tlnp|awk \'{print $4}\'"', host, ssh_params);
         } else {
-            cmd = util.format('netstat -an|awk \'{print $4}\'|grep %s|wc -l', port);
+            cmd = 'netstat -tlnp|awk \'{print $4}\'';
         }
         return cmd;
     };
-    let cmd1 = generateCommand(host, port);
-    let child = exec(cmd1, function (err, stdout, stderr) {
-        if (err) {
-            logger.error('command %s execute with error: %j', cmd1, err.stack);
-            invokeCallback(cb, 'error');
-        } else if (stdout.trim() !== '0') {
-            invokeCallback(cb, 'busy');
-        } else {
-            port = server.clientPort;
-            let cmd2 = generateCommand(host, port);
-            exec(cmd2, function (err, stdout, stderr) {
-                if (err) {
-                    logger.error('command %s execute with error: %j', cmd2, err.stack);
-                    invokeCallback(cb, 'error');
-                } else if (stdout.trim() !== '0') {
-                    invokeCallback(cb, 'busy');
-                } else {
-                    invokeCallback(cb, 'leisure');
-                }
-            });
+    const check = function (port: number | string, next: (busy: string[]) => void) {
+        const cmd = generateCommand(host);
+        exec(cmd, function (err, stdout, stderr) {
+            if (err) {
+                logger.error('command %s execute with error: %j', cmd, err.stack);
+                invokeCallback(cb, 'error');
+                return;
+            }
+            let busy = getBusyAddresses(stdout, port);
+            if (busy.length > 0) {
+                logger.warn('checkPort: port %s on %s is occupied, matched: %s', port, host, busy.join(','));
+            }
+            next(busy);
+        });
+    };
+    check(primaryPort, function (busy) {
+        if (busy.length > 0) {
+            invokeCallback(cb, 'busy', { host: host, port: primaryPort, addresses: busy });
+            return;
         }
+        if (!clientPort) {
+            invokeCallback(cb, 'leisure');
+            return;
+        }
+        check(clientPort, function (busyClientPort) {
+            if (busyClientPort.length > 0) {
+                invokeCallback(cb, 'busy', { host: host, port: clientPort, addresses: busyClientPort });
+                return;
+            }
+            invokeCallback(cb, 'leisure');
+        });
     });
 }
 
 export function isLocal(host: string) {
-    let app = pinus.app;
+    const app = pinus.app;
     if (!app) {
         return host === '127.0.0.1' || host === 'localhost' || host === '0.0.0.0' || inLocal(host);
     } else {

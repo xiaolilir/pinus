@@ -19,7 +19,6 @@ import * as appManager from './common/manager/appManager';
 import { TransactionCondictionFunction, TransactionHandlerFunction } from './common/manager/appManager';
 import * as fs from 'fs';
 import * as path from 'path';
-import { isFunction } from 'util';
 import { IComponent } from './interfaces/IComponent';
 import { DictionaryComponent } from './components/dictionary';
 import { PushSchedulerComponent } from './components/pushScheduler';
@@ -27,8 +26,8 @@ import { BackendSessionService } from './common/service/backendSessionService';
 import { ChannelService, ChannelServiceOptions } from './common/service/channelService';
 import { SessionComponent } from './components/session';
 import { ServerComponent } from './components/server';
-import { RemoteComponent } from './components/remote';
-import { ProxyComponent, RouteFunction, RouteMaps } from './components/proxy';
+import { RemoteComponent, RemoteComponentOptions } from './components/remote';
+import { ProxyComponent, ProxyComponentOptions, RouteFunction, RouteMaps } from './components/proxy';
 import { ProtobufComponent, ProtobufComponentOptions } from './components/protobuf';
 import { MonitorComponent } from './components/monitor';
 import { MasterComponent } from './components/master';
@@ -45,7 +44,7 @@ import { ModuleRecord } from './util/moduleUtil';
 import { ApplicationEventContructor, IPlugin } from './interfaces/IPlugin';
 import { Cron, ResponseErrorHandler } from './server/server';
 import { RemoterProxy } from './util/remoterHelper';
-import { FrontendOrBackendSession, ISession, ScheduleOptions, SID, UID } from './index';
+import { FrontendOrBackendSession, ISession, MonitorOptions, ScheduleOptions, SID, UID } from './index';
 
 let logger = getLogger('pinus', path.basename(__filename));
 
@@ -354,7 +353,7 @@ export class Application {
             name = null;
         }
 
-        if (isFunction(component)) {
+        if (typeof component === 'function') {
             component = new component(this, opts);
         }
 
@@ -649,6 +648,9 @@ export class Application {
     set(setting: 'backendSessionService', val: BackendSessionComponent, attach?: boolean): Application;
     set(setting: 'protobufConfig', val: ProtobufComponentOptions, attach?: boolean): Application;
     set(setting: 'connectorConfig', val: ConnectorComponentOptions, attach?: boolean): Application;
+    set(setting: 'remoteConfig', val: RemoteComponentOptions, attach?: boolean): Application;
+    set(setting: 'monitorConfig', val: MonitorOptions, attach?: boolean): Application;
+    set(setting: 'proxyConfig', val: ProxyComponentOptions, attach?: boolean): Application;
     set(setting: Constants.KEYWORDS.BEFORE_FILTER, val: BeforeHandlerFilter[], attach?: boolean): Application;
     set(setting: Constants.KEYWORDS.AFTER_FILTER, val: AfterHandlerFilter[], attach?: boolean): Application;
     set(setting: Constants.KEYWORDS.GLOBAL_BEFORE_FILTER, val: BeforeHandlerFilter[], attach?: boolean): Application;
@@ -682,6 +684,7 @@ export class Application {
     get(setting: 'channelService'): ChannelService;
     get(setting: 'sessionService'): SessionService;
     get(setting: 'channelConfig'): ChannelServiceOptions;
+    get(setting: 'remoteConfig'): RemoteComponentOptions;
     get(setting: 'backendSessionService'): BackendSessionComponent;
     get(setting: Constants.KEYWORDS.BEFORE_FILTER): BeforeHandlerFilter[];
     get(setting: Constants.KEYWORDS.AFTER_FILTER): AfterHandlerFilter[];

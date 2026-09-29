@@ -48,7 +48,7 @@ export class Decoder {
             let tag = head.tag;
             let name = protos.__tags[tag];
 
-            switch (protos[name].option) {
+            switch (protos[name]?.option) {
                 case 'optional':
                 case 'required':
                     msg[name] = this.decodeProp(protos[name].type, protos);
@@ -59,6 +59,19 @@ export class Decoder {
                     }
                     this.decodeArray(msg[name], protos[name].type, protos);
                     break;
+                case 'map':
+                    if (!msg[name]) {
+                        msg[name] = new Map();
+                    }
+                    this.decodeMap(msg[name], protos[name].type, protos);
+                    break;
+                case 'obj':
+                    if (!msg[name]) {
+                        msg[name] = {};
+                    }
+                    this.decodeObject(msg[name], protos[name].type, protos);
+                    break;
+
             }
         }
 
@@ -99,9 +112,11 @@ export class Decoder {
     decodeProp(type: string, protos?: { [key: string]: any }) {
         switch (type) {
             case 'uInt32':
+            case 'uInt64':
                 return codec.decodeUInt32(this.getBytes());
             case 'int32':
             case 'sInt32':
+            case 'sInt64':
                 return codec.decodeSInt32(this.getBytes());
             case 'float':
                 let float = this.buffer.readFloatLE(this.offset);
@@ -118,6 +133,11 @@ export class Decoder {
                 this.offset += length;
 
                 return str;
+            case 'bool':
+                const value = codec.decodeUInt32(this.getBytes());
+                const boolValue = value ? true : false;
+                return boolValue;
+                break;
             default:
                 let message = protos && (protos.__messages[type] || this.protos['message ' + type]);
                 if (message) {
@@ -139,6 +159,26 @@ export class Decoder {
             }
         } else {
             array.push(this.decodeProp(type, protos));
+        }
+    }
+
+    decodeMap(map: Map<(string | number), any>, type: string, protos?: { [key: string]: any }) {
+        let length = codec.decodeUInt32(this.getBytes());
+        let message = protos && (protos.__messages[type] || this.protos['message ' + type]);
+        for (let i = 0; i < length; i++) {
+            const key = this.decodeProp(message.key.type, protos) as (string | number);
+            const value = this.decodeProp(message.value.type, protos);
+            map.set(key, value);
+        }
+    }
+
+    decodeObject(map: {[key: string]: any }, type: string, protos?: { [key: string]: any }) {
+        let length = codec.decodeUInt32(this.getBytes());
+        let message = protos && (protos.__messages[type] || this.protos['message ' + type]);
+        for (let i = 0; i < length; i++) {
+            const key = this.decodeProp(message.key.type, protos) as (string | number);
+            const value = this.decodeProp(message.value.type, protos);
+            map[key] = value;
         }
     }
 

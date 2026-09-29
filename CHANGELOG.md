@@ -1,7 +1,104 @@
+
+### 1.7.4
+
+[pinus] 修复 jsclient build.js 的 msgId 变长编码字节序与服务端不一致，reqId 为 128 的倍数时该请求收不到响应 [#865](https://github.com/node-pinus/pinus/issues/865)
+
+[pinus] 修复自动重启场景下 checkPort 状态判断错误
+
+[pinus] 修复 [DEP0049] DeprecationWarning: util.isFunction API 弃用告警
+
+[pinus-rpc] 修复 failureProcess 逻辑 [#998](https://github.com/node-pinus/pinus/issues/998)
+
+[pinus-protobuf] 修复 proto options 为空时可能崩溃的问题，encoder/decoder 增加空值防护
+
+[pinus][examples] web-server 模板及示例替换弃用的 Express 中间件为 body-parser / method-override
+
+[ci] 更新 ci 配置及 node 版本
+
+### 1.7.3
+
+补记：本版本于 2024-08-25 发布到 npm，当时未更新 CHANGELOG；1.7.2 版本号已占用但未实际发布。
+
+[pinus] console 模块支持自定义 ssh 参数
+
+[pinus] socket.io 连接器支持 HTTPS 部署
+
+[pinus] 修复单元测试
+
+[pinus] 删除 tsconfig 无用参数 watch
+
+[package] 更新依赖版本（express 4.19.2 / ejs 3.1.10 / webpack 5.91.0 / uuid / reflect-metadata 等）
+
+### 1.7.1
+
+[pinus] context，routeContext改为如果有传递则使用传递对象 [#673](https://github.com/node-pinus/pinus/pull/673)
+
+[pinus-admin][pinus-rpc] 为了服务器健壮性，保证monitorAgent始终会进行健康及重连处理 [#677](https://github.com/node-pinus/pinus/pull/677)
+
+[pinus-rpc]rpc模块增加父类方法路由支持 [#684](https://github.com/node-pinus/pinus/pull/684)
+
+[pinus]修复typescript5.2.x版本clearTimeout,clearInterval编译错误 [#794](https://github.com/node-pinus/pinus/pull/794)
+
+[pinus]fix: lerna run lint 报错 [#880](https://github.com/node-pinus/pinus/pull/880)
+
+[pinus]fix: 修复单元测试 [#901](https://github.com/node-pinus/pinus/pull/901)
+
+[package] Update yarn.lock fix yarn error.
+
+[pinus] 修复模板项目的 依赖版本号.
+
+[pinus-robot]修复 node依赖版本
+
+[ci] remove ci node 12, add node 20.
+
+[package] 更新依赖版本
+
+
+### 1.7.0
+
+[pinus-rpc] 修复mqtt的rpc-client概率自动断开连接问题 [#650](https://github.com/node-pinus/pinus/issues/650)
+
+[pinus] 增加remote相对路径功能支持，可以让项目打成可执行程序或直接部署到不同服务器的不同路径 [#651](https://github.com/node-pinus/pinus/issues/651)
+
+[pinus-rpc] 修复typescript 5.x编译错误 [#652](https://github.com/node-pinus/pinus/issues/652)
+
+[pinus-protobuf] 新增对map和object的编码和解码支持 [#653](https://github.com/node-pinus/pinus/pull/653)
+
+
+### 1.6.5
+
+[chore] 更新部分依赖版本
+
+[ci] 添加进程正常启动测试
+
+[ci] add node 12,14,16,18 env test
+
+[examples]: websocket-chat-ts-run 改造成 nestjs示例
+
+[examples]: chat-ts-run 添加 逻辑模块依赖注入示例 [#19](https://github.com/node-pinus/pinus/issues/19)
+
+[ci] add nestjs examples test
+
+FEA: 用 pretty-columns 替代 cliff  [#598](https://github.com/node-pinus/pinus/pull/598)
+
+[tools] 限制pinus-robot的socket.io-client版本 [#613](https://github.com/node-pinus/pinus/pull/613)
+
+[pinus] 对backendSessionService KickBySid 添加参数签名  [#616](https://github.com/node-pinus/pinus/pull/616)
+
+[pinus][examples] SSL 证书重载 功能,并添加示例 (热更新SSL证书) [#630](https://github.com/node-pinus/pinus/pull/630)
+
+[ci] add ssl-connector example ci-test.
+
+
+
+
+
 ### 1.6.4
 
 [template] optimize preload.ts handle error. 
+
 [template] fix simple-example web-server.
+
 [pinus]nginx代理hybrid、ws获取客户端真实IP，port.[#532](https://github.com/node-pinus/pinus/pull/532)
 
 

@@ -40,13 +40,13 @@ export class MailBox extends EventEmitter implements IMailBox {
     host: string;
     port: number;
     requests: {[id: number]: MailBoxTimeoutCallback} = {};
-    timeout: {[id: number]: NodeJS.Timer} = {};
+    timeout: {[id: number]: NodeJS.Timeout} = {};
     queue: MailBoxMessage[] = [];
     bufferMsg: boolean;
     keepalive: number;
     interval: number;
     timeoutValue: any;
-    keepaliveTimer: NodeJS.Timer;
+    keepaliveTimer: NodeJS.Timeout;
     lastPing = -1;
     lastPong = -1;
     connected = false;
@@ -54,7 +54,7 @@ export class MailBox extends EventEmitter implements IMailBox {
     opts: any;
     serverId: string;
     socket: any;
-    _interval: NodeJS.Timer;
+    _interval: NodeJS.Timeout;
     _errored = false;
 
     connect(tracer: Tracer, cb: (err?: Error) => void) {
@@ -216,18 +216,10 @@ export class MailBox extends EventEmitter implements IMailBox {
         // console.log('checkKeepAlive lastPing %d lastPong %d ~~~', this.lastPing, this.lastPong);
         let now = Date.now();
         let KEEP_ALIVE_TIMEOUT = this.keepalive * 2;
-        if (this.lastPing > 0) {
-            if (this.lastPong < this.lastPing) {
-                if (now - this.lastPing > KEEP_ALIVE_TIMEOUT) {
-                    logger.error('mqtt rpc client %s checkKeepAlive timeout from remote server %s for %d lastPing: %s lastPong: %s', this.serverId, this.id, KEEP_ALIVE_TIMEOUT, this.lastPing, this.lastPong);
-                    this.emit('close', this.id);
-                    this.lastPing = -1;
-                    // this.close();
-                }
-            } else {
-                this.socket.pingreq();
-                this.lastPing = Date.now();
-            }
+        if (this.lastPong < this.lastPing && now - this.lastPing > KEEP_ALIVE_TIMEOUT) {
+            logger.error('mqtt rpc client %s checkKeepAlive timeout from remote server %s for %d lastPing: %s lastPong: %s', this.serverId, this.id, KEEP_ALIVE_TIMEOUT, this.lastPing, this.lastPong);
+            this.emit('close', this.id);
+            this.lastPing = -1;
         } else {
             this.socket.pingreq();
             this.lastPing = Date.now();

@@ -16,7 +16,7 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@master
       with:
-        node-version: 12
+        node-version: 18
         registry-url: https://registry.npmjs.org/
     - run: git remote set-url origin https://node-pinus:${{ secrets.GITHUB_TOKEN }}@github.com/node-pinus/pinus.git
     - run: git checkout origin/master -B master
@@ -36,3 +36,5 @@ jobs:
     env: # More info about the environment variables in the README
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Leave this as is, it's automatically generated
       NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+      # setup-node 生成的 .npmrc 引用 ${NODE_AUTH_TOKEN}，yarn install 步骤也需要该变量存在
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
